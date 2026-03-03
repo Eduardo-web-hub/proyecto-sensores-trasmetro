@@ -1,4 +1,4 @@
-//sensor funcionamiento con respecto a la distancia.
+//sensor funcionamiento con respecto a la distancia, sharp.
 void setup() {
   Serial.begin(9600);
   pinMode(13, OUTPUT);
