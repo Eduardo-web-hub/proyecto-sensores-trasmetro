@@ -1,0 +1,15 @@
+//hacer medicaciones, para lograr dectectar las distancias
+const int sensorPin = A0;
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  int valor = analogRead(sensorPin);
+
+  Serial.print("Valor sensor: ");
+  Serial.println(valor);
+
+  delay(200);
+}
