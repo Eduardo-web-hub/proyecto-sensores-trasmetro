@@ -1,0 +1,63 @@
+#define LED 13
+#define UMBRAL 30          // distancia en cm para activarse
+#define TIEMPO_LIMITE 2000 // 2 segundos máximo entre sensores
+
+int estado = 0; 
+unsigned long tiempo_inicio = 0;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(LED, OUTPUT);
+}
+
+void loop() {
+
+  float izq = distancia(A0, 20);
+  float der = distancia(A1, 20);
+
+  bool sensor_izq = izq < UMBRAL;
+  bool sensor_der = der < UMBRAL;
+
+  switch (estado) {
+
+    case 0: // Esperando que se active el izquierdo
+      if (sensor_izq) {
+        estado = 1;
+        tiempo_inicio = millis();
+        Serial.println("Izquierdo activado primero");
+      }
+    break;
+
+    case 1: // Esperando que se active el derecho
+      if (sensor_der && (millis() - tiempo_inicio < TIEMPO_LIMITE)) {
+        digitalWrite(LED, HIGH);
+        Serial.println("Secuencia IZQ -> DER detectada");
+        delay(1000);              // LED encendido 1 segundo
+        digitalWrite(LED, LOW);
+        estado = 0;
+      }
+
+      // Si se pasa el tiempo, reinicia
+      if (millis() - tiempo_inicio > TIEMPO_LIMITE) {
+        estado = 0;
+      }
+    break;
+  }
+
+  delay(50);
+}
+
+float distancia(int pin, int n)
+{
+  long suma = 0;
+
+  for(int i = 0; i < n; i++)
+  {
+    suma += analogRead(pin);
+  }
+
+  float adc = suma / n;
+  float distancia_cm = 147000 * pow(adc, -1.47);
+
+  return distancia_cm;
+}
