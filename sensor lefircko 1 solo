@@ -1,0 +1,33 @@
+const int sensorPin = 2;
+const int buzzerPin = 3;
+
+unsigned long tiempoInicio = 0;
+const unsigned long tiempoEspera = 5000; //tiempo de espera para que suene el buzzer
+bool contando = false;
+
+void setup() {
+  pinMode(sensorPin, INPUT);
+  pinMode(buzzerPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int estadoSensor = digitalRead(sensorPin);
+
+  if (estadoSensor == LOW) { // Objeto detectado
+    if (!contando) {
+      tiempoInicio = millis(); // inicia conteo
+      contando = true;
+    }
+
+    if (millis() - tiempoInicio >= tiempoEspera) {
+      digitalWrite(buzzerPin, HIGH); // suena buzzer
+      Serial.println("Buzzer activado");
+    }
+
+  } else {
+    contando = false; // reinicia si se pierde el objet o
+    digitalWrite(buzzerPin, LOW); // apaga buzzer
+    Serial.println("no hay objecto");
+  }
+}
