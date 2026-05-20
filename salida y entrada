@@ -1,0 +1,162 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+#define BUZZER 2
+#define UMBRAL 30
+#define TIEMPO_LIMITE 2000
+
+int estado = 0;
+unsigned long tiempo_inicio = 0;
+
+void setup() {
+
+  Serial.begin(9600);
+
+  pinMode(BUZZER, OUTPUT);
+
+  // Inicializar OLED
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("No se encontro OLED"));
+    while(true);
+  }
+
+  pantallaInicial();
+}
+
+void loop() {
+
+  float izq = distancia(A0, 20);
+  float der = distancia(A1, 20);
+
+  bool sensor_izq = izq < UMBRAL;
+  bool sensor_der = der < UMBRAL;
+
+  switch (estado) {
+
+    case 0:
+
+      // IZQUIERDA -> DERECHA
+      if (sensor_izq) {
+
+        estado = 1;
+        tiempo_inicio = millis();
+
+        Serial.println("Izquierda activada primero");
+      }
+
+      // DERECHA -> IZQUIERDA
+      else if (sensor_der) {
+
+        estado = 2;
+        tiempo_inicio = millis();
+
+        Serial.println("Derecha activada primero");
+      }
+
+    break;
+
+    // Espera sensor derecho
+    case 1:
+
+      if (sensor_der && (millis() - tiempo_inicio < TIEMPO_LIMITE)) {
+
+        Serial.println("SALIDA INDEBIDA");
+
+        alarma("SALIDA", "INDEBIDA");
+
+        estado = 0;
+      }
+
+      if (millis() - tiempo_inicio > TIEMPO_LIMITE) {
+
+        estado = 0;
+      }
+
+    break;
+
+    // Espera sensor izquierdo
+    case 2:
+
+      if (sensor_izq && (millis() - tiempo_inicio < TIEMPO_LIMITE)) {
+
+        Serial.println("ENTRADA INDEBIDA");
+
+        alarma("ENTRADA", "INDEBIDA");
+
+        estado = 0;
+      }
+
+      if (millis() - tiempo_inicio > TIEMPO_LIMITE) {
+
+        estado = 0;
+      }
+
+    break;
+  }
+
+  delay(50);
+}
+
+// FUNCION ALARMA
+void alarma(const char* linea1, const char* linea2)
+{
+  display.clearDisplay();
+
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+
+  display.setCursor(0, 10);
+  display.println(linea1);
+
+  display.setCursor(0, 35);
+  display.println(linea2);
+
+  display.display();
+
+  // Buzzer
+  tone(BUZZER, 1000);
+
+  delay(1000);
+
+  noTone(BUZZER);
+
+  pantallaInicial();
+}
+
+// PANTALLA INICIAL
+void pantallaInicial()
+{
+  display.clearDisplay();
+
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  display.setCursor(15, 25);
+  display.println("Sistema listo");
+
+  display.display();
+}
+
+// FUNCION DISTANCIA
+float distancia(int pin, int n)
+{
+  long suma = 0;
+
+  for(int i = 0; i < n; i++)
+  {
+    suma += analogRead(pin);
+  }
+
+  float adc = suma / n;
+
+  float distancia_cm = 147000 * pow(adc, -1.47);
+
+  return distancia_cm;
+}
